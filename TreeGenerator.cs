@@ -26,8 +26,8 @@ namespace FamilyTreeGenerator
         readonly int chancePartnerSameSex = 10;
 
         // chances for remarrying
-        readonly int chanceRemarriedWithChild = 5;
-        readonly int chanceRemarriedWithoutChild = 5;
+        readonly int chanceRemarriedWithChild = 10;
+        readonly int chanceRemarriedWithoutChild = 10;
 
         // chances for the amount of children
         readonly int chanceOneChild = 30;
@@ -36,6 +36,7 @@ namespace FamilyTreeGenerator
         readonly int chanceFourChild = 5;
 
 
+        readonly int chanceIsTwin = 5;
         readonly int chanceChildIsAdopted = 15;
 
 
@@ -80,11 +81,8 @@ namespace FamilyTreeGenerator
             return mainPerson;
         }
 
-        public Person GeneratePersonWithRelationships(Sex sex, int generation, int startAge, int maxAge)
+        public Person GenerateRelationships(Person mainPerson)
         {
-            Person mainPerson = Person.GenerateRandomPerson();
-            mainPerson.Generation = generation;
-
             bool lastGeneration = mainPerson.Generation == maxGeneration;
 
             int chanceNoChild = 100 - chancePartnerWithChild - chanceSingleAdopted;
@@ -109,6 +107,7 @@ namespace FamilyTreeGenerator
 
             return mainPerson;
         }
+
 
         private void GeneratePartnerWithChild(Person mainPerson, bool remarried)
         {
@@ -155,13 +154,33 @@ namespace FamilyTreeGenerator
             foreach (var item in childrenPossibilites)
             {
                 int isAdoptedChance = random.Next(100);
+                int twinChance = random.Next(100);
 
-                Person child = GeneratePersonWithRelationships((Sex)random.Next(0, 2), mainPerson.Generation + 1, 0, Math.Max(1, mainPerson.Age - 14));
+                Person child;
 
-                if (isGaruanteedAdopted || isAdoptedChance <= chanceChildIsAdopted)
+                if (currentChance != 0 && twinChance <= chanceIsTwin)
                 {
-                    child.IsAdopted = true;
+                    Person twin = mainPerson.Children.Last();
+                    child = Person.GenerateRandomPerson(twin.PSex, twin.Age, twin.Age);
+                    child.PHairStyle = twin.PHairStyle;
+                    child.IsAdopted = twin.IsAdopted;
+
+                    twin.IsTwin = true;
+                    child.IsTwin = true;
                 }
+                else
+                {
+                    child = Person.GenerateRandomPerson((Sex)random.Next(0, 2), 0, Math.Max(1, mainPerson.Age - 14));
+
+                    if (isGaruanteedAdopted || isAdoptedChance <= chanceChildIsAdopted)
+                    {
+                        child.IsAdopted = true;
+                    }
+                }
+
+                child.Generation = mainPerson.Generation + 1;
+
+                child = GenerateRelationships(child);
 
                 child.Parents.Add(mainPerson);
 
@@ -173,15 +192,25 @@ namespace FamilyTreeGenerator
                     child.Parents.Add(partner);
                 }
 
-                currentChance += item;
-
                 if (childSituation <= currentChance)
                     break;
+
+                currentChance += item;
             }
 
             foreach (var child in mainPerson.Children)
             {
                 child.Siblings = mainPerson.Children.Where(x => x != child).ToList();
+
+                while(child.Siblings.Any(x=>x.Name == child.Name))
+                {
+                    child.SetGeneratedName();
+                }
+
+                if (child.Parents.Any(x => x.Name == child.Name))
+                {
+                    child.Name += " Jr";
+                }
             }
 
         }
