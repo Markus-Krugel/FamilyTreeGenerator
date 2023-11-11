@@ -124,8 +124,10 @@ namespace FamilyTreeGenerator
         public Hairstyle PHairStyle { get; set; }
         public Haircolor PHairColor { get; set; }
         public Job PJob { get; set; }
+        public SkinColor PSkinColor { get; set; }
         public bool IsAdopted { get; set; }
         public bool IsAlive { get; set; }
+        public int Generation { get; set; }
 
         // Relationships
         public List<Person> Parents { get; set; }
@@ -163,9 +165,33 @@ namespace FamilyTreeGenerator
             return result;
         }
 
+        public static List<Person> GenerateListOfRelationships(Person startPerson, List<Person> result)
+        {
+            foreach (Person person in startPerson.Partners)
+            {
+                if(!result.Contains(person))
+                {
+                    result.Add(person);
+                    result = GenerateListOfRelationships(person, result);
+                }
+            }
+
+            foreach (Person person in startPerson.Children)
+            {
+                if (!result.Contains(person))
+                {
+                    result.Add(person);
+                    result = GenerateListOfRelationships(person, result);
+                }
+            }
+
+            return result;
+        }
+
+
         public override string ToString()
         {
-            return $@"{Name} ({Age} {PSex}, {PJob}, {PHairColor} {PHairStyle} Hair)
+            return $@"{Name} ({Age} {PSex}[{Generation}], {PJob}, {PHairColor} {PHairStyle} Hair)
                       Parents: {string.Join(",\n\t\t\t\t\t\t\t\t", Parents.Select(p => p.ToStringShort()))}
                       Partners: {string.Join(",\n\t\t\t\t\t\t\t\t", Partners.Select(p => p.ToStringShort()))}
                       Siblings: {string.Join(",\n\t\t\t\t\t\t\t\t", Siblings.Select(p => p.ToStringShort()))}

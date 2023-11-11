@@ -14,6 +14,8 @@ namespace FamilyTreeGenerator
 
         Random random;
 
+        int maxGeneration = 3;
+
         // chances for the family situation of the person
         readonly int chancePartnerWithChild = 50;
         readonly int chancePartnerWithoutChild = 20;
@@ -34,56 +36,116 @@ namespace FamilyTreeGenerator
         readonly int chanceFourChild = 5;
 
 
+        readonly int chanceChildIsAdopted = 15;
+
+
         public TreeGenerator(int? seed)
         {
             random = seed.HasValue ? new Random(seed.Value) : new Random();
 
-            for (int i = 0; i < 10; i++)
-            {
-                GenerateTree();
-            }
+            GenerateTree();
         }
 
         public void GenerateTree()
         {
-            startPerson = GeneratePersonWithRelationships();
+            startPerson = GenerateStartPerson();
+
+            Statistics.PrintStatistics(startPerson, maxGeneration);
         }
 
-        public Person GeneratePersonWithRelationships()
+        public Person GenerateStartPerson()
         {
             Person mainPerson = Person.GenerateRandomPerson();
+            mainPerson.Generation = 0;
 
-            GeneratePartnerWithChild(mainPerson, false);
+            int familySituation = random.Next(100 - chanceSingleWithoutChild - chancePartnerWithoutChild); // startPerson should always have children
 
-            //int familySituation = random.Next(100);
-            //
-            //if (familySituation <= chancePartnerWithChild)
-            //{
-            //    GeneratePartnerWithChild(mainPerson, false);
-            //}
-            //else if (familySituation <= chancePartnerWithChild + chancePartnerWithoutChild)
-            //{
-            //
-            //}
-            //else if (familySituation <= chancePartnerWithChild + chancePartnerWithoutChild + chanceSingleAdopted)
-            //{
-            //
-            //}
-            //else if (familySituation <= chancePartnerWithChild + chancePartnerWithoutChild + chanceSingleAdopted + chanceSingleWithoutChild)
-            //{
-            //
-            //}
+            if (familySituation <= chancePartnerWithChild)
+            {
+                GeneratePartnerWithChild(mainPerson, false);
+            }
+            else if (familySituation <= chancePartnerWithChild + chanceSingleAdopted)
+            {
+                GenerateChildren(mainPerson, null, true);
+            }
+            else if (familySituation <= chancePartnerWithChild + chanceSingleAdopted + chancePartnerWithoutChild)
+            {
+                GeneratePartner(mainPerson, false);
+            }
+            else if (familySituation <= chancePartnerWithChild + chancePartnerWithoutChild + chanceSingleAdopted + chanceSingleWithoutChild)
+            {
+
+            }
+
+            return mainPerson;
+        }
+
+        public Person GeneratePersonWithRelationships(Sex sex, int generation, int startAge, int maxAge)
+        {
+            Person mainPerson = Person.GenerateRandomPerson();
+            mainPerson.Generation = generation;
+
+            bool lastGeneration = mainPerson.Generation == maxGeneration;
+
+            int chanceNoChild = 100 - chancePartnerWithChild - chanceSingleAdopted;
+            int familySituation = random.Next(lastGeneration ? chanceNoChild : 100);
+
+            if (familySituation <= chancePartnerWithoutChild)
+            {
+                GeneratePartner(mainPerson, false);
+            }
+            else if (familySituation <= chancePartnerWithoutChild + chanceSingleWithoutChild)
+            {
+                return mainPerson;
+            }
+            else if (familySituation <= chancePartnerWithoutChild + chanceSingleWithoutChild + chancePartnerWithChild)
+            {
+                GeneratePartnerWithChild(mainPerson, false);
+            }
+            else if (familySituation <= chancePartnerWithoutChild + chanceSingleWithoutChild + chancePartnerWithChild + chanceSingleAdopted)
+            {
+                GenerateChildren(mainPerson, null, true);
+            }
 
             return mainPerson;
         }
 
         private void GeneratePartnerWithChild(Person mainPerson, bool remarried)
         {
+            GeneratePartner(mainPerson, remarried);
+            GenerateChildren(mainPerson, mainPerson.Partners.Last(), mainPerson.PSex == mainPerson.Partners.Last().PSex);
+        }
+
+        /// <summary>
+        /// Generate the partner of the person
+        /// </summary>
+        /// <param name="mainPerson">the person for which the partner will be generated</param>
+        /// <param name="remarries">is it the second partner for the person</param>
+        private void GeneratePartner(Person mainPerson, bool remarries)
+        {
             int partnerSituation = random.Next(100);
-            int childSituation = random.Next(100);
 
             Person partner = Person.GenerateRandomPerson(partnerSituation <= chancePartnerSameSex ? mainPerson.PSex : EnumExtension.ToggleEnumValue<Sex>(mainPerson.PSex), 14);
+            partner.Generation = mainPerson.Generation;
+
             mainPerson.Partners.Add(partner);
+            partner.Partners.Add(mainPerson);
+
+            if (!remarries)
+            {
+                GenerateRemarry(mainPerson);
+            }
+        }
+
+        /// <summary>
+        /// Generate the children of a person
+        /// </summary>
+        /// <param name="mainPerson">the person who the children belong to</param>
+        /// <param name="partner">the potential second parent of the children. can be null and therefore only one parent possible</param>
+        /// <param name="isGaruanteedAdopted">generated children will be garuenteed to be adopted. Happens when same sex parents or single parents</param>
+        private void GenerateChildren(Person mainPerson, Person partner, bool isGaruanteedAdopted)
+        {
+            int childSituation = random.Next(100);
 
             List<int> childrenPossibilites = new List<int> { chanceOneChild, chanceTwoChild, chanceThreeChild, chanceFourChild };
 
@@ -92,39 +154,55 @@ namespace FamilyTreeGenerator
 
             foreach (var item in childrenPossibilites)
             {
-                Person child = Person.GenerateRandomPerson((Sex)random.Next(0,2), 0, Math.Max(1, mainPerson.Age - 14));
+                int isAdoptedChance = random.Next(100);
+
+                Person child = GeneratePersonWithRelationships((Sex)random.Next(0, 2), mainPerson.Generation + 1, 0, Math.Max(1, mainPerson.Age - 14));
+
+                if (isGaruanteedAdopted || isAdoptedChance <= chanceChildIsAdopted)
+                {
+                    child.IsAdopted = true;
+                }
+
                 child.Parents.Add(mainPerson);
-                child.Parents.Add(partner);
 
                 mainPerson.Children.Add(child);
 
-                partner.Children.Add(child);
+                if (partner != null)
+                {
+                    partner.Children.Add(child);
+                    child.Parents.Add(partner);
+                }
 
                 currentChance += item;
 
                 if (childSituation <= currentChance)
-                    break;                    
+                    break;
             }
 
             foreach (var child in mainPerson.Children)
             {
                 child.Siblings = mainPerson.Children.Where(x => x != child).ToList();
-                Console.WriteLine(child);
-                Console.WriteLine();
             }
 
-            if (!remarried)
+        }
+
+        /// <summary>
+        /// Decides if the person remarries and if so with or without child
+        /// </summary>
+        /// <param name="mainPerson">the person who potentially remarries</param>
+        private void GenerateRemarry(Person mainPerson)
+        {
+            int remarrySituation = random.Next(100);
+
+            bool lastGeneration = mainPerson.Generation == maxGeneration;
+
+            if (remarrySituation <= chanceRemarriedWithoutChild)
             {
-                int remarrySituation = random.Next(100);
-
-                if (remarrySituation <= chanceRemarriedWithChild)
-                {
-                    GeneratePartnerWithChild(mainPerson, true);
-                }
-                else if (remarrySituation <= chanceRemarriedWithChild + chanceRemarriedWithoutChild)
-                {
-
-                }
+                GeneratePartner(mainPerson, true);
+            }
+            else if(!lastGeneration && remarrySituation <= chanceRemarriedWithoutChild + chanceRemarriedWithChild)
+            {
+                GeneratePartnerWithChild(mainPerson, true);
             }
         }
     }
