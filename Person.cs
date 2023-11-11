@@ -1,4 +1,4 @@
-﻿using Stammbaumgenerator;
+﻿using FamilyTreeGenerator;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,11 +7,6 @@ using System.Threading.Tasks;
 
 namespace FamilyTreeGenerator
 {
-    public enum Sex { Male, Female }
-    public enum Hairstyle { Long, Short, Curly, Ponytail, Afro }
-    public enum Haircolor { Red, Blond, Black, Brown, Blue, Pink }
-    public enum Job { Cook, Astronaut, Doctor, Engineer, Attorney, Farmer }
-
     public class Person
     {
         private static Random random = new Random();
@@ -122,29 +117,62 @@ namespace FamilyTreeGenerator
 
         }
 
+        // Person Data
         public string Name { get; set; }
         public int Age { get; set; }
         public Sex PSex { get; set; }
         public Hairstyle PHairStyle { get; set; }
         public Haircolor PHairColor { get; set; }
         public Job PJob { get; set; }
+        public bool IsAdopted { get; set; }
+        public bool IsAlive { get; set; }
 
-        public static Person GenerateRandomPerson()
+        // Relationships
+        public List<Person> Parents { get; set; }
+        public List<Person> Partners { get; set; }
+        public List<Person> Children { get; set; }
+        public List<Person> Siblings { get; set; }
+
+        public static Person GenerateRandomPerson(int minAge = 0, int maxAge = 110)
         {
 
             Person result = new Person();
             result.PSex = (Sex)EnumExtension.RandomEnum(typeof(Sex));
             result.Name = result.PSex == Sex.Female ? girlsNames[random.Next(girlsNames.Length)]
                                                     : boysNames[random.Next(boysNames.Length)];
-            result.Age = random.Next(0, 110);
+            result.Age = random.Next(minAge, maxAge);
             result.PHairStyle = (Hairstyle)EnumExtension.RandomEnum(typeof(Hairstyle));
             result.PHairColor = (Haircolor)EnumExtension.RandomEnum(typeof(Haircolor));
-            result.PJob = (Job)EnumExtension.RandomEnum(typeof(Job));
+            result.PJob = result.Age >= 16 ? (Job)EnumExtension.RandomEnum(typeof(Job)) : Job.Jobless;
+
+            result.Parents = new List<Person>();
+            result.Partners = new List<Person>();
+            result.Children = new List<Person>();
+            result.Siblings = new List<Person>();
+
+            return result;
+        }
+
+        public static Person GenerateRandomPerson(Sex sex, int minAge = 0, int maxAge = 110)
+        {
+            Person result = Person.GenerateRandomPerson(minAge, maxAge);
+            result.PSex = (Sex)EnumExtension.RandomEnum(typeof(Sex));
+            result.Name = result.PSex == Sex.Female ? girlsNames[random.Next(girlsNames.Length)]
+                                                    : boysNames[random.Next(boysNames.Length)];
 
             return result;
         }
 
         public override string ToString()
+        {
+            return $@"{Name} ({Age} {PSex}, {PJob}, {PHairColor} {PHairStyle} Hair)
+                      Parents: {string.Join(",\n\t\t\t\t\t\t\t\t", Parents.Select(p => p.ToStringShort()))}
+                      Partners: {string.Join(",\n\t\t\t\t\t\t\t\t", Partners.Select(p => p.ToStringShort()))}
+                      Siblings: {string.Join(",\n\t\t\t\t\t\t\t\t", Siblings.Select(p => p.ToStringShort()))}
+                      Children: {string.Join(",\n\t\t\t\t\t\t\t\t", Children.Select(p => p.ToStringShort()))}";
+        }
+
+        public string ToStringShort()
         {
             return $@"{Name} ({Age} {PSex}, {PJob}, {PHairColor} {PHairStyle} Hair)";
         }

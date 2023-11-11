@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FamilyTreeGenerator;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,10 +25,7 @@ namespace FamilyTreeGenerator
         {
             InitializeComponent();
 
-            for (int i = 0; i < 100; i++)
-            {
-                Console.WriteLine(Person.GenerateRandomPerson());
-            }
+            TreeGenerator treeGenerator = new TreeGenerator(null);
         }
     }
 }
