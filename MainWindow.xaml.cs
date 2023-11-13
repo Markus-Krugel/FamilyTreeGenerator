@@ -25,7 +25,7 @@ namespace FamilyTreeGenerator
         {
             InitializeComponent();
 
-            TreeGenerator treeGenerator = new TreeGenerator(null);
+            TreeGenerator treeGenerator = new TreeGenerator(null, GenerationRules.GetMultiGenerationSmallFamilyRulesset());
         }
     }
 }

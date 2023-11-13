@@ -14,35 +14,13 @@ namespace FamilyTreeGenerator
 
         Random random;
 
-        int maxGeneration = 3;
+        GenerationRules ruleset;
 
-        // chances for the family situation of the person
-        readonly int chancePartnerWithChild = 50;
-        readonly int chancePartnerWithoutChild = 20;
-        readonly int chanceSingleAdopted = 10;
-        readonly int chanceSingleWithoutChild = 20;
-
-        // chance that the partner is of the same sex
-        readonly int chancePartnerSameSex = 10;
-
-        // chances for remarrying
-        readonly int chanceRemarriedWithChild = 10;
-        readonly int chanceRemarriedWithoutChild = 10;
-
-        // chances for the amount of children
-        readonly int chanceOneChild = 30;
-        readonly int chanceTwoChild = 50;
-        readonly int chanceThreeChild = 15;
-        readonly int chanceFourChild = 5;
-
-
-        readonly int chanceIsTwin = 5;
-        readonly int chanceChildIsAdopted = 15;
-
-
-        public TreeGenerator(int? seed)
+        public TreeGenerator(int? seed, GenerationRules rules)
         {
             random = seed.HasValue ? new Random(seed.Value) : new Random();
+
+            ruleset = rules;
 
             GenerateTree();
         }
@@ -51,7 +29,7 @@ namespace FamilyTreeGenerator
         {
             startPerson = GenerateStartPerson();
 
-            Statistics.PrintStatistics(startPerson, maxGeneration);
+            Statistics.PrintAllStatistics(startPerson, ruleset.MaxGeneration);
         }
 
         public Person GenerateStartPerson()
@@ -59,21 +37,21 @@ namespace FamilyTreeGenerator
             Person mainPerson = Person.GenerateRandomPerson();
             mainPerson.Generation = 0;
 
-            int familySituation = random.Next(100 - chanceSingleWithoutChild - chancePartnerWithoutChild); // startPerson should always have children
+            int familySituation = random.Next(100 - ruleset.ChanceSingleWithoutChild - ruleset.ChancePartnerWithoutChild); // startPerson should always have children
 
-            if (familySituation <= chancePartnerWithChild)
+            if (familySituation <= ruleset.ChancePartnerWithChild)
             {
                 GeneratePartnerWithChild(mainPerson, false);
             }
-            else if (familySituation <= chancePartnerWithChild + chanceSingleAdopted)
+            else if (familySituation <= ruleset.ChancePartnerWithChild + ruleset.ChanceSingleAdopted)
             {
                 GenerateChildren(mainPerson, null, true);
             }
-            else if (familySituation <= chancePartnerWithChild + chanceSingleAdopted + chancePartnerWithoutChild)
+            else if (familySituation <= ruleset.ChancePartnerWithChild + ruleset.ChanceSingleAdopted + ruleset.ChancePartnerWithoutChild)
             {
                 GeneratePartner(mainPerson, false);
             }
-            else if (familySituation <= chancePartnerWithChild + chancePartnerWithoutChild + chanceSingleAdopted + chanceSingleWithoutChild)
+            else if (familySituation <= ruleset.ChancePartnerWithChild + ruleset.ChancePartnerWithoutChild + ruleset.ChanceSingleAdopted + ruleset.ChanceSingleWithoutChild)
             {
 
             }
@@ -83,26 +61,27 @@ namespace FamilyTreeGenerator
 
         public Person GenerateRelationships(Person mainPerson)
         {
-            bool lastGeneration = mainPerson.Generation == maxGeneration;
+            bool lastGeneration = mainPerson.Generation == ruleset.MaxGeneration;
 
-            int chanceNoChild = 100 - chancePartnerWithChild - chanceSingleAdopted;
+            int chanceNoChild = 100 - ruleset.ChancePartnerWithChild - ruleset.ChanceSingleAdopted;
             int familySituation = random.Next(lastGeneration ? chanceNoChild : 100);
 
-            if (familySituation <= chancePartnerWithoutChild)
+            if (familySituation <= ruleset.ChancePartnerWithoutChild)
             {
                 GeneratePartner(mainPerson, false);
             }
-            else if (familySituation <= chancePartnerWithoutChild + chanceSingleWithoutChild)
+            else if (familySituation <= ruleset.ChancePartnerWithoutChild + ruleset.ChanceSingleWithoutChild)
             {
                 return mainPerson;
             }
-            else if (familySituation <= chancePartnerWithoutChild + chanceSingleWithoutChild + chancePartnerWithChild)
+            else if (familySituation <= ruleset.ChancePartnerWithoutChild + ruleset.ChanceSingleWithoutChild + ruleset.ChancePartnerWithChild)
             {
                 GeneratePartnerWithChild(mainPerson, false);
             }
-            else if (familySituation <= chancePartnerWithoutChild + chanceSingleWithoutChild + chancePartnerWithChild + chanceSingleAdopted)
+            else if (familySituation <= ruleset.ChancePartnerWithoutChild + ruleset.ChanceSingleWithoutChild + ruleset.ChancePartnerWithChild + ruleset.ChanceSingleAdopted)
             {
                 GenerateChildren(mainPerson, null, true);
+                GenerateRemarry(mainPerson);
             }
 
             return mainPerson;
@@ -124,7 +103,7 @@ namespace FamilyTreeGenerator
         {
             int partnerSituation = random.Next(100);
 
-            Person partner = Person.GenerateRandomPerson(partnerSituation <= chancePartnerSameSex ? mainPerson.PSex : EnumExtension.ToggleEnumValue<Sex>(mainPerson.PSex), 14);
+            Person partner = Person.GenerateRandomPerson(partnerSituation <= ruleset.ChancePartnerSameSex ? mainPerson.PSex : EnumExtension.ToggleEnumValue<Sex>(mainPerson.PSex), 14);
             partner.Generation = mainPerson.Generation;
 
             mainPerson.Partners.Add(partner);
@@ -146,19 +125,19 @@ namespace FamilyTreeGenerator
         {
             int childSituation = random.Next(100);
 
-            List<int> childrenPossibilites = new List<int> { chanceOneChild, chanceTwoChild, chanceThreeChild, chanceFourChild };
+            List<int> childrenPossibilites = new List<int> { ruleset.ChanceOneChild, ruleset.ChanceTwoChild, ruleset.ChanceThreeChild, ruleset.ChanceFourChild };
 
             int possiblityIndex = 0;
-            int currentChance = 0;
+            int currentchance = 0;
 
             foreach (var item in childrenPossibilites)
             {
-                int isAdoptedChance = random.Next(100);
-                int twinChance = random.Next(100);
+                int isAdoptedchance = random.Next(100);
+                int twinchance = random.Next(100);
 
                 Person child;
 
-                if (currentChance != 0 && twinChance <= chanceIsTwin)
+                if (currentchance != 0 && twinchance <= ruleset.ChanceIsTwin)
                 {
                     Person twin = mainPerson.Children.Last();
                     child = Person.GenerateRandomPerson(twin.PSex, twin.Age, twin.Age);
@@ -172,7 +151,7 @@ namespace FamilyTreeGenerator
                 {
                     child = Person.GenerateRandomPerson((Sex)random.Next(0, 2), 0, Math.Max(1, mainPerson.Age - 14));
 
-                    if (isGaruanteedAdopted || isAdoptedChance <= chanceChildIsAdopted)
+                    if (isGaruanteedAdopted || isAdoptedchance <= ruleset.ChanceChildIsAdopted)
                     {
                         child.IsAdopted = true;
                     }
@@ -192,10 +171,10 @@ namespace FamilyTreeGenerator
                     child.Parents.Add(partner);
                 }
 
-                if (childSituation <= currentChance)
+                if (childSituation <= currentchance)
                     break;
 
-                currentChance += item;
+                currentchance += item;
             }
 
             foreach (var child in mainPerson.Children)
@@ -223,13 +202,13 @@ namespace FamilyTreeGenerator
         {
             int remarrySituation = random.Next(100);
 
-            bool lastGeneration = mainPerson.Generation == maxGeneration;
+            bool lastGeneration = mainPerson.Generation == ruleset.MaxGeneration;
 
-            if (remarrySituation <= chanceRemarriedWithoutChild)
+            if (remarrySituation <= ruleset.ChanceRemarriedWithoutChild)
             {
                 GeneratePartner(mainPerson, true);
             }
-            else if(!lastGeneration && remarrySituation <= chanceRemarriedWithoutChild + chanceRemarriedWithChild)
+            else if(!lastGeneration && remarrySituation <= ruleset.ChanceRemarriedWithoutChild + ruleset.ChanceRemarriedWithChild)
             {
                 GeneratePartnerWithChild(mainPerson, true);
             }

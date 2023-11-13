@@ -418,6 +418,15 @@ namespace FamilyTreeGenerator
 
         public static List<Person> GenerateListOfRelationships(Person startPerson, List<Person> result)
         {
+            foreach (Person person in startPerson.Parents)
+            {
+                if (!result.Contains(person))
+                {
+                    result.Add(person);
+                    result = GenerateListOfRelationships(person, result);
+                }
+            }
+
             foreach (Person person in startPerson.Partners)
             {
                 if (!result.Contains(person))
