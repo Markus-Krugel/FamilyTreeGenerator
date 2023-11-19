@@ -8,7 +8,6 @@ namespace FamilyTreeGenerator
 {
     public class GenerationRules
     {
-
         public int MaxGeneration { get; protected set; }
 
         // chances for the family situation of the person
@@ -66,18 +65,18 @@ namespace FamilyTreeGenerator
             {
                 MaxGeneration = 5,
 
-                ChancePartnerWithChild = 40,
+                ChancePartnerWithChild = 25,
                 ChancePartnerWithoutChild = 20,
-                ChanceSingleAdopted = 20,
-                ChanceSingleWithoutChild = 20,
+                ChanceSingleAdopted = 15,
+                ChanceSingleWithoutChild = 40,
 
                 ChancePartnerSameSex = 25,
 
                 ChanceRemarriedWithChild = 5,
                 ChanceRemarriedWithoutChild = 5,
 
-                ChanceOneChild = 60,
-                ChanceTwoChild = 30,
+                ChanceOneChild = 80,
+                ChanceTwoChild = 10,
                 ChanceThreeChild = 5,
                 ChanceFourChild = 5,
 
